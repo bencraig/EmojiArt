@@ -80,6 +80,12 @@ class EmojiArtDocument: ObservableObject {
         }
     }
     
+    func scaleSelectedEmojis (by scale: CGFloat) {
+        for emoji in emojiArt.emojis.filter({$0.isSelected}) {
+            scaleEmoji(emoji, by: scale)
+        }
+    }
+    
     func select(_ emoji: EmojiArtModel.Emoji) {
         if let index = emojiArt.emojis.index(matching: emoji) {
             emojiArt.emojis[index].isSelected.toggle()
@@ -109,5 +115,9 @@ class EmojiArtDocument: ObservableObject {
         for emoji in emojiArt.emojis.filter({$0.isSelected}) {
             updateEmojiPosition(emoji, offset)
         }
+    }
+    
+    func emojiSelected() -> Bool {
+        !emojiArt.emojis.filter{$0.isSelected}.isEmpty
     }
 }

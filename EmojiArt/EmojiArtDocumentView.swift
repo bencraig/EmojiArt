@@ -37,12 +37,12 @@ struct EmojiArtDocumentView: View {
                     ForEach(document.emojis) { emoji in
                         ZStack {
                                 Circle()
-                                .frame(width:fontSize(for: emoji) * zoomScale * 1.5 * (emoji.isSelected ? 1 : 0), height:fontSize(for: emoji) * zoomScale * 1.5 * (emoji.isSelected ? 1 : 0))
+                                .frame(width:fontSize(for: emoji) * (emoji.isSelected ? selectedEmojiZoomScale : zoomScale) * 1.5 * (emoji.isSelected ? 1 : 0), height:fontSize(for: emoji) * (emoji.isSelected ? selectedEmojiZoomScale : zoomScale) * 1.5 * (emoji.isSelected ? 1 : 0))
                                     .position(position(for: emoji, in: geometry))
                                     .foregroundColor(selectionColors[(emoji.id%selectionColors.count)])
                             Text(emoji.text)
                                 .font(.system(size: fontSize(for: emoji)))
-                                .scaleEffect(zoomScale)
+                                .scaleEffect((emoji.isSelected ? selectedEmojiZoomScale : zoomScale))
                                 .position(position(for: emoji, in: geometry))
                                 .gesture (tapEmoji(emoji).simultaneously(with: longPressEmoji(emoji)).simultaneously(with:emoji.isSelected ? panEmoji() : nil))
                         }
@@ -167,19 +167,31 @@ struct EmojiArtDocumentView: View {
     }
     
     @State private var steadyStateZoomScale: CGFloat = 1
-    @GestureState private var gestureZoomScale: CGFloat = 1
-    
+    @GestureState private var gestureZoomScale: (background: CGFloat, selection: CGFloat) = (1, 1)
+        
     private var zoomScale: CGFloat {
-        steadyStateZoomScale * gestureZoomScale
+        steadyStateZoomScale * gestureZoomScale.background
+    }
+    
+    private var selectedEmojiZoomScale: CGFloat {
+        steadyStateZoomScale * gestureZoomScale.selection
     }
     
     private func zoomGesture() -> some Gesture {
         MagnificationGesture()
             .updating($gestureZoomScale) { latestGestureScale, gestureZoomScale, _ in
-                gestureZoomScale = latestGestureScale
+                if document.emojiSelected() {
+                    gestureZoomScale.selection = latestGestureScale
+                } else {
+                    gestureZoomScale.background = latestGestureScale
+                }
             }
             .onEnded { gestureScaleAtEnd in
-                steadyStateZoomScale *= gestureScaleAtEnd
+                if document.emojiSelected() {
+                    document.scaleSelectedEmojis(by: gestureScaleAtEnd)
+                } else {
+                    steadyStateZoomScale *= gestureScaleAtEnd
+                }
             }
     }
     

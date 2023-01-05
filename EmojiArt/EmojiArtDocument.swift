@@ -79,4 +79,35 @@ class EmojiArtDocument: ObservableObject {
             emojiArt.emojis[index].size = Int((CGFloat(emojiArt.emojis[index].size) * scale).rounded(.toNearestOrAwayFromZero))
         }
     }
+    
+    func select(_ emoji: EmojiArtModel.Emoji) {
+        if let index = emojiArt.emojis.index(matching: emoji) {
+            emojiArt.emojis[index].isSelected.toggle()
+        }
+    }
+    
+    func deselectEmojis() {
+        for i in 0..<emojiArt.emojis.count {
+            emojiArt.emojis[i].isSelected = false
+        }
+    }
+    
+    func delete(_ emoji: EmojiArtModel.Emoji) {
+        if let index = emojiArt.emojis.index(matching: emoji) {
+            emojiArt.emojis.remove(at:index)
+        }
+    }
+    
+    func updateEmojiPosition(_ emoji: EmojiArtModel.Emoji, _ positionOffset: CGSize) {
+        if let i = emojiArt.emojis.index(matching: emoji) {
+            emojiArt.emojis[i].x += Int(positionOffset.width)
+            emojiArt.emojis[i].y += Int(positionOffset.height)
+        }
+    }
+    
+    func updateSelectedEmojiPositions(byOffset offset: CGSize) {
+        for emoji in emojiArt.emojis.filter({$0.isSelected}) {
+            updateEmojiPosition(emoji, offset)
+        }
+    }
 }

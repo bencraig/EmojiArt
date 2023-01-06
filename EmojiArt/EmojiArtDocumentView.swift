@@ -44,7 +44,7 @@ struct EmojiArtDocumentView: View {
                                 .font(.system(size: fontSize(for: emoji)))
                                 .scaleEffect((emoji.isSelected ? selectedEmojiZoomScale : zoomScale))
                                 .position(position(for: emoji, in: geometry))
-                                .gesture (tapEmoji(emoji).simultaneously(with: longPressEmoji(emoji)).simultaneously(with:emoji.isSelected ? panEmoji() : nil))
+                                .gesture (tapEmoji(emoji).simultaneously(with: longPressEmoji(emoji)).simultaneously(with: panEmoji(emoji)))
                         }
                     }
                 }
@@ -85,8 +85,12 @@ struct EmojiArtDocumentView: View {
     private func position(for emoji: EmojiArtModel.Emoji, in geometry: GeometryProxy) -> CGPoint {
         var panOffset = CGSize.zero
         if emoji.isSelected {
-            panOffset = emojiGesturePanOffset
+            panOffset = emojiGesturePanOffset.selection
         }
+        if emoji == emojiGesturePanOffset.individual.emoji {
+            panOffset = emojiGesturePanOffset.individual.offset
+        }
+    
         return convertFromEmojiCoordinates((emoji.x + Int(panOffset.width), emoji.y + Int(panOffset.height)), in: geometry)
     }
     
@@ -154,15 +158,23 @@ struct EmojiArtDocumentView: View {
             }
     }
     
-    @GestureState private var emojiGesturePanOffset: CGSize = CGSize.zero
+    @GestureState private var emojiGesturePanOffset: (individual: (offset:CGSize, emoji: EmojiArtModel.Emoji?), selection: CGSize) = ((offset: CGSize.zero, emoji: nil), selection: CGSize.zero)
     
-    private func panEmoji() -> some Gesture {
-        DragGesture()
+    private func panEmoji(_ emoji: EmojiArtModel.Emoji) -> some Gesture {
+        return DragGesture()
             .updating($emojiGesturePanOffset) { latestDragGestureValue, emojiGesturePanOffset, _ in
-                emojiGesturePanOffset = latestDragGestureValue.translation / zoomScale
+                if emoji.isSelected {
+                    emojiGesturePanOffset.selection = latestDragGestureValue.translation / zoomScale
+                } else {
+                    emojiGesturePanOffset.individual = (offset: latestDragGestureValue.translation / zoomScale, emoji: emoji)
+                }
             }
             .onEnded { finalDragGestureValue in
-                document.updateSelectedEmojiPositions(byOffset: (finalDragGestureValue.translation / zoomScale))
+                if emoji.isSelected {
+                    document.updateSelectedEmojiPositions(byOffset: (finalDragGestureValue.translation / zoomScale))
+                } else {
+                    document.updateEmojiPosition(emoji, (finalDragGestureValue.translation / zoomScale))
+                }
             }
     }
     
